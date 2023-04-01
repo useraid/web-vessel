@@ -70,15 +70,19 @@ read -p "Enter the app name: " app
 # Stack Check
 if [ -d "./${app}/client" ] && [ -d "./${app}/server" ]
 then
+    echo "MERN Stack detected, Containerizing Application ..."
     mern
 elif [ -d "./${app}/public" ] && [ -d "./${app}/src" ]
 then
+    echo "MEAN Stack detected, Containerizing Application ..."
     mean
 elif [ -d "${app}/public_html" ] && [ -d "${app}/mysql" ]
 then
+    echo "LAMP Stack detected, Containerizing Application ..."
     lamp
 elif [ -d "./${app}/manage.py" ] && [ -d "./${app}/${app}" ]
 then
+    echo "Django detected, Containerizing Application ..."
     django
 else
     echo "Could not determine web stack."
