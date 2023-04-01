@@ -1,0 +1,86 @@
+#!/bin/bash
+
+function genNetwork {
+    docker network create ${app}-network
+}
+
+function mern {
+    # Base image build
+    docker build -t ${app}-client ./${app}/client
+    docker build -t ${app}-server ./${app}/server
+    # Network Init
+    genNetwork
+    # MongoDB
+    docker run --name ${app}-mongodb --network ${app}-network -d mongo
+    docker run --name ${app}-server --network ${app}-network -d -p 5000:5000 -e MONGODB_URI=mongodb://${app}-mongodb:27017/${app} ${app}-server
+    docker run --name ${app}-client --network ${app}-network -d -p 3000:3000 ${app}-client
+    # NodeJS
+    docker run --name ${app}-node --network ${app}-network -d -p 3001:3001 -e SERVER_URL=http://${app}-server:5000 ${app}-server node index.js
+}
+
+function lamp {
+    # Base image build
+    docker build -t ${app}-lamp ./${app}
+    # Network Init
+    genNetwork
+    # MySQL
+    docker run --name ${app}-mysql --network ${app}-network -e MYSQL_ROOT_PASSWORD=secret -e MYSQL_DATABASE=${app} -d mysql
+    # Apache
+    docker run --name ${app}-lamp --network ${app}-network -d -p 80:80 -e MYSQL_HOST=${app}-mysql -e MYSQL_DATABASE=${app} ${app}-lamp
+}
+
+function django {
+    # Base image build
+    docker build -t ${app}-django ./${app}
+    # Network Init
+    genNetwork
+    # PostgreSQL
+    docker run --name ${app}-postgres --network ${app}-network -e POSTGRES_PASSWORD=secret -e POSTGRES_DB=${app} -d postgres
+    # Django
+    docker run --name ${app}-django --network ${app}-network -d -p 8000:8000 -e POSTGRES_HOST=${app}-postgres -e POSTGRES_DB=${app} ${app}-django
+}
+
+function mean {
+    # Base Image build
+    docker build -t ${app}-mean ./${app}
+    # Network Init
+    genNetwork
+    # MongoDB
+    docker run --name ${app}-mongodb --network ${app}-network -d mongo
+    # NodeJS
+    docker run --name ${app}-node --network ${app}-network -d -p 3000:3000 -e MONGODB_URI=mongodb://${app}-mongodb:27017/${app} ${app}-mean
+}
+
+# Banner
+cat <<EOF
+
+██     ██ ███████ ██████  ██    ██ ███████ ███████ ██      
+██     ██ ██      ██   ██ ██    ██ ██      ██      ██      
+██  █  ██ █████   ██████  ██    ██ ███████ ███████ ██      
+██ ███ ██ ██      ██   ██  ██  ██       ██      ██ ██      
+ ███ ███  ███████ ██████    ████   ███████ ███████ ███████ 
+                                                - useraid
+                                                           
+
+EOF
+
+# App input
+read -p "Enter the app name: " app
+
+# Stack Check
+if [ -d "./${app}/client" ] && [ -d "./${app}/server" ]
+then
+    mern
+elif [ -d "./${app}/public" ] && [ -d "./${app}/src" ]
+then
+    mean
+elif [ -d "${app}/public_html" ] && [ -d "${app}/mysql" ]
+then
+    lamp
+elif [ -d "./${app}/manage.py" ] && [ -d "./${app}/${app}" ]
+then
+    django
+else
+    echo "Could not determine web stack."
+    exit 1
+fi
