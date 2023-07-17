@@ -1,2 +1,2 @@
 # web-vessel
-Bash Program that allows to containerize web applications with a single command.
+Efficient multi-stack web app containerization leveraging Docker.
